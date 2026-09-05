@@ -1,0 +1,5 @@
+name: cactpkg
+version: 0.1.0
+arch: i686
+description: CactOS package manager - local install/remove of packages
+depends:

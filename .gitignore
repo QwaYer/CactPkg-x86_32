@@ -1,0 +1,7 @@
+build/
+repo/
+pkg/*/payload/
+tools/__pycache__/
+*.o
+*.img
+*.pyc

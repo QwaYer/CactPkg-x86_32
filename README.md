@@ -30,13 +30,13 @@ Requires built sibling trees of **CactLibc-x86_32** (`clibc.so`, `ld.so`,
 `start.o`) - auto-detected by default:
 
 ```sh
-make            # build/bin/cactpkg + build/bin/hello (demo)
-make repo       # build the personal offline repository in repo/ (.cpkg + index)
-make check      # validate packages and dump .cpkg
-make install    # bake cactpkg and repo/ into the LocalRepoCactOS tree
+ninja -C build-meson             # build-meson/cactpkg + build-meson/hello (demo)
+ninja -C build-meson repo        # build the personal offline repository in repo/ (.cpkg + index)
+ninja -C build-meson check       # validate packages and dump .cpkg
+ninja -C build-meson stage       # bake cactpkg and repo/ into the LocalRepoCactOS tree
 ```
 
-`make install` places:
+`ninja -C build-meson stage` places:
 
 - `/sbin/cactpkg` - the manager,
 - `/lib/cactpkg/repo/{*.cpkg,index}` - the personal offline repository.
@@ -44,12 +44,12 @@ make install    # bake cactpkg and repo/ into the LocalRepoCactOS tree
 The regular image build then packs them into `cctkfs.img`:
 
 ```sh
-make -C CactOS-x86_32 iso     # or: make -C LocalRepoCactOS-x86_32
+ninja -C CactOS-x86_32/build-meson iso   # or: ninja -C LocalRepoCactOS-x86_32/build-meson stage
 ```
 
-Since the LocalRepo `Makefile` gained a `cactpkg` step, the manager and its
+Since the LocalRepo build gained a `cactpkg` step, the manager and its
 offline repository are re-baked into the image on every build, even after a
-`make clean`.
+`ninja -C build-meson clean`.
 
 ## Usage inside CactOS
 
@@ -75,7 +75,7 @@ disk. Configuration: `/etc/cactpkg.conf` (`prefix`, `db`, repeatable `repo`,
 
 ```
 CactPkg-x86_32/
-├── Makefile
+├── meson.build
 ├── docs/FORMAT.md      # formats: directory-package, .cpkg v1, index, db
 ├── include/cactpkg.h
 ├── src/                # the manager (C, CactOS ELF)

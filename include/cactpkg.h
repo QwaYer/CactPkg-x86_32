@@ -89,6 +89,7 @@ int  cp_name_ok(const char *name);
 
 /* config.c */
 void cfg_defaults(struct cp_config *cfg);
+void cfg_write_default(const char *path);
 int  cfg_load(struct cp_config *cfg, const char *path);   /* 0 ok, -1 parse error */
 void cfg_add_repo(struct cp_config *cfg, const char *dir);
 

@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stat.h>
 
 #include "cactpkg.h"
 
@@ -42,6 +45,39 @@ static void cfg_set(struct cp_config *cfg, const char *key, const char *value)
         strncpy(cfg->arch, value, 15);
         cfg->arch[15] = '\0';
     }
+}
+
+/* Write a documented default config on first run; never overwrites an
+ * existing file. */
+void cfg_write_default(const char *path)
+{
+    int fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0644);
+    if (fd < 0)
+        return;
+
+    static const char text[] =
+        "# cactpkg configuration - auto-generated on first run.\n"
+        "#\n"
+        "# prefix - installation root\n"
+        "# db     - package database directory\n"
+        "# repo   - repository directory (repeatable)\n"
+        "# arch   - package architecture\n"
+        "\n"
+        "prefix=/usr/local\n"
+        "db=/var/lib/cactpkg\n"
+        "repo=/lib/cactpkg/repo\n"
+        "arch=" CP_ARCH_DEFAULT "\n";
+
+    unsigned len = (unsigned)(sizeof(text) - 1);
+    unsigned off = 0;
+    while (off < len) {
+        int n = (int)write(fd, text + off, len - off);
+        if (n <= 0)
+            break;
+        off += (unsigned)n;
+    }
+    close(fd);
+    chmod(path, 0644);
 }
 
 int cfg_load(struct cp_config *cfg, const char *path)

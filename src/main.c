@@ -108,6 +108,10 @@ int main(int argc, char **argv)
             args[nargs++] = (char *)a;
     }
 
+    /* First run: drop a documented default config (never overwrites). */
+    if (strcmp(conf_path, CONF_DEFAULT) == 0)
+        cfg_write_default(conf_path);
+
     /* load config after collecting flags so that -C is honoured */
     if (cfg_load(&cfg, conf_path) != 0) {
         cp_err("cactpkg: error in config file %s\n", conf_path);

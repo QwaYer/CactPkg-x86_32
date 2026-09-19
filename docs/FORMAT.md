@@ -101,8 +101,9 @@ repositories (repeatable `repo` key).
 
 ## 4. Configuration `/etc/cactpkg.conf`
 
-Same syntax as the manifest. If the file is missing, the built-in defaults
-apply.
+Same syntax as the manifest. If the file is missing, `cactpkg` writes a
+documented default there on first run (without overwriting an existing file);
+the built-in defaults apply if it cannot be created.
 
 | Key       | Default                | Meaning                          |
 |-----------|------------------------|----------------------------------|

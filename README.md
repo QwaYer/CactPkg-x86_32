@@ -69,7 +69,8 @@ cactpkg remove hello            # remove
 
 Files are installed into the prefix (default `/usr/local`) and persist on
 disk. Configuration: `/etc/cactpkg.conf` (`prefix`, `db`, repeatable `repo`,
-`arch`); overridable with `--prefix`, `-R/--repo`, `-C/--conf`.
+`arch`), created with documented defaults on first run; overridable with
+`--prefix`, `-R/--repo`, `-C/--conf`.
 
 ## Layout
 

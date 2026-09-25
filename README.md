@@ -101,8 +101,8 @@ CactPkg-x86_32/
 
 1. Create a `pkg/<name>/` directory with a `manifest` (name, version, arch,
    depends, ...) and a `payload/` that mirrors the installation root.
-2. `make repo` - builds the `.cpkg` and regenerates `index`.
-3. `make install` - and the package rides into the image under
+2. `ninja -C build-meson repo` - builds the `.cpkg` and regenerates `index`.
+3. `ninja -C build-meson stage` - and the package rides into the image under
    `/lib/cactpkg/repo`.
 
 ## License

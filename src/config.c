@@ -16,7 +16,7 @@ void cfg_defaults(struct cp_config *cfg)
     strcpy(cfg->db, "/var/lib/cactpkg");
     cfg->nrepos = 0;
     strcpy(cfg->arch, CP_ARCH_DEFAULT);
-    cfg_add_repo(cfg, "/lib/cactpkg/repo");   /* offline repo baked into the image */
+    cfg_add_repo(cfg, "/usr/lib/cactpkg/repo");   /* offline repo baked into the image */
 }
 
 void cfg_add_repo(struct cp_config *cfg, const char *dir)
@@ -65,7 +65,7 @@ void cfg_write_default(const char *path)
         "\n"
         "prefix=/usr/local\n"
         "db=/var/lib/cactpkg\n"
-        "repo=/lib/cactpkg/repo\n"
+        "repo=/usr/lib/cactpkg/repo\n"
         "arch=" CP_ARCH_DEFAULT "\n";
 
     unsigned len = (unsigned)(sizeof(text) - 1);

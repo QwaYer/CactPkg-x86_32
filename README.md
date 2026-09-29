@@ -9,7 +9,7 @@
 
 **The local package manager of CactOS.** It works entirely inside the OS and
 does not reach outside: the package source is a repository directory (in the
-image: `/lib/cactpkg/repo`). Network repositories will be added later; the
+image: `/usr/lib/cactpkg/repo`). Network repositories will be added later; the
 command and format design already accounts for them.
 
 ## Status (0.1.0)
@@ -38,8 +38,8 @@ ninja -C build-meson stage       # bake cactpkg and repo/ into the LocalRepoCact
 
 `ninja -C build-meson stage` places:
 
-- `/sbin/cactpkg` - the manager,
-- `/lib/cactpkg/repo/{*.cpkg,index}` - the personal offline repository.
+- `/usr/sbin/cactpkg` - the manager,
+- `/usr/lib/cactpkg/repo/{*.cpkg,index}` - the personal offline repository.
 
 The regular image build then packs them into `cctkfs.img`:
 
@@ -53,8 +53,8 @@ offline repository are re-baked into the image on every build, even after a
 
 ## Usage inside CactOS
 
-The manager lives in `/sbin`, and the offline repository is available by
-default (`/lib/cactpkg/repo`):
+The manager lives in `/usr/sbin`, and the offline repository is available by
+default (`/usr/lib/cactpkg/repo`):
 
 ```
 cactpkg update                  # refresh repository indexes
@@ -103,7 +103,7 @@ CactPkg-x86_32/
    depends, ...) and a `payload/` that mirrors the installation root.
 2. `ninja -C build-meson repo` - builds the `.cpkg` and regenerates `index`.
 3. `ninja -C build-meson stage` - and the package rides into the image under
-   `/lib/cactpkg/repo`.
+   `/usr/lib/cactpkg/repo`.
 
 ## License
 

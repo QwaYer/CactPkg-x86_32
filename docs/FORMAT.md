@@ -2,7 +2,7 @@
 
 The package manager for CactOS. It works **fully locally** (network
 repositories will be added later): package sources are directories on
-disk/in the image (`/lib/cactpkg/repo` by default).
+disk/in the image (`/usr/lib/cactpkg/repo` by default).
 
 All multi-byte `.cpkg` fields are **little-endian** (i686).
 
@@ -109,7 +109,7 @@ the built-in defaults apply if it cannot be created.
 |-----------|------------------------|----------------------------------|
 | `prefix`  | `/usr/local`           | installation root of packages    |
 | `db`      | `/var/lib/cactpkg`     | installed-packages db directory  |
-| `repo`    | `/lib/cactpkg/repo`    | repository director(ies) (repeatable) |
+| `repo`    | `/usr/lib/cactpkg/repo`| repository director(ies) (repeatable) |
 | `arch`    | `i686`                 | accepted package architecture    |
 
 All keys are overridden by command-line flags.

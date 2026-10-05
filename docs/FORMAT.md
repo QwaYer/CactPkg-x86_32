@@ -90,8 +90,8 @@ Lines: `name<TAB>version<TAB>file<TAB>depends`. `depends` is comma-separated
 or empty. `#` is a comment.
 
 ```
-hello	1.0.0	hello-1.0.0.cpkg	
-cactpkg	0.1.0	cactpkg-0.1.0.cpkg	hello
+cactpkg	0.1.0	cactpkg-0.1.0.cpkg
+hello	1.0.0	hello-1.0.0.cpkg
 ```
 
 One repository directory = one `index`. The config may list several

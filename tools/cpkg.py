@@ -11,6 +11,9 @@ Commands:
   build  <pkgdir> [--repo <dir>]   build a .cpkg from a directory-package
           [-o <file>]              (with --repo: <dir>/<name>-<version>.cpkg)
   index  <repodir>                 rebuild index from *.cpkg in a directory
+  sysrepo <userland> <repodir>     generate one .cpkg per executable in
+          [--version <ver>]        <userland>/{bin,sbin} (the base image) and
+          [--arch <arch>]          re-index; skips names already packaged
   check  <pkgdir>                  validate a directory-package
   extract <file.cpkg> <dest>       unpack a .cpkg (for host-side testing)
   dump   <file.cpkg>               show the manifest and entries of a .cpkg
@@ -28,6 +31,11 @@ HDR = struct.Struct("<4sBBHIIIIII")   # 32 bytes
 NAME_MAX = 255
 
 REQUIRED = ("name", "version", "arch")
+
+# Generated base-system packages carry this manifest tag so a rebuild can drop
+# the previous batch without touching hand-written packages (hello, cactpkg).
+SYS_ORIGIN = "system"
+SYS_VERSION = "2.0.0"
 
 
 class CpkgError(Exception):
@@ -212,6 +220,73 @@ def cmd_index(repodir):
     print(f"cactpkg: index: {len(rows)} package(s) in {repodir}")
 
 
+def cmd_sysrepo(argv):
+    """Generate a .cpkg for every executable in <userland>/{bin,sbin}.
+
+    The base image's userland is not made of packages, so cactpkg cannot see
+    it.  This wraps each staged binary as its own package (version = the CactOS
+    release) and re-indexes, so `cactpkg update/search` lists the base system
+    and every entry is installable.  Hand-written packages already in the repo
+    win: a tool whose name is taken is skipped.
+    """
+    if len(argv) < 2:
+        raise CpkgError("sysrepo <userland> <repodir> [--version <ver>] [--arch <arch>]")
+    root, repodir = argv[0], argv[1]
+    ver, arch = SYS_VERSION, "i686"
+    i = 2
+    while i < len(argv):
+        if argv[i] == "--version" and i + 1 < len(argv):
+            ver = argv[i + 1]; i += 2
+        elif argv[i] == "--arch" and i + 1 < len(argv):
+            arch = argv[i + 1]; i += 2
+        else:
+            raise CpkgError(f"unknown argument: {argv[i]}")
+    if not os.path.isdir(repodir):
+        raise CpkgError(f"{repodir}: not a directory")
+
+    # Drop the previous generated batch, and remember names already packaged.
+    taken = set()
+    for fn in sorted(os.listdir(repodir)):
+        if not fn.endswith(".cpkg"):
+            continue
+        path = os.path.join(repodir, fn)
+        try:
+            _, meta, _ = read_cpkg(path)
+        except CpkgError:
+            continue
+        if meta.get("origin") == SYS_ORIGIN:
+            os.remove(path)
+        else:
+            taken.add(meta["name"])
+
+    made = 0
+    for sub in ("bin", "sbin"):
+        d = os.path.join(root, sub)
+        if not os.path.isdir(d):
+            continue
+        for nm in sorted(os.listdir(d)):
+            full = os.path.join(d, nm)
+            if nm in taken or not name_ok(nm):
+                continue
+            if not os.path.isfile(full) or not os.access(full, os.X_OK):
+                continue
+            with open(full, "rb") as f:
+                data = f.read()
+            mode = os.stat(full).st_mode & 0o7777
+            manifest = (f"name: {nm}\n"
+                        f"version: {ver}\n"
+                        f"arch: {arch}\n"
+                        f"description: CactOS base-system program (usr/{sub})\n"
+                        f"depends:\n"
+                        f"origin: {SYS_ORIGIN}\n")
+            write_cpkg(manifest, [(f"{sub}/{nm}", mode, data)],
+                       os.path.join(repodir, f"{nm}-{ver}.cpkg"))
+            made += 1
+
+    print(f"cactpkg: sysrepo: {made} base-system package(s), version {ver}")
+    cmd_index(repodir)
+
+
 def cmd_check(pkgdir):
     manifest_text, meta, files = load_pkgdir(pkgdir)
     print(f"ok: {meta['name']} {meta['version']} arch={meta['arch']}")
@@ -257,6 +332,8 @@ def main():
             if len(argv) != 1:
                 raise CpkgError("index <repodir>")
             cmd_index(argv[0])
+        elif cmd == "sysrepo":
+            cmd_sysrepo(argv)
         elif cmd == "check":
             if len(argv) != 1:
                 raise CpkgError("check <pkgdir>")

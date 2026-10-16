@@ -1,0 +1,5 @@
+name: cact-headers
+version: 2.0.0
+arch: i686
+description: CactOS C library headers (libc + ioctl ABI) for on-target compilation
+depends:

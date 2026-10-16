@@ -162,7 +162,7 @@ static int repo_install_one(const struct cp_config *cfg,
         cp_out("cactpkg: %s: reinstalling (--force)\n", rp->name);
     }
 
-    char *path = cp_join(ri->dir, rp->file);
+    char *path = repo_local_file(cfg->cache, ri->dir, rp->file, force);
     if (!path)
         return -1;
 
@@ -197,7 +197,7 @@ static int dep_install(const struct cp_config *cfg, const char *name, int depth,
 
     for (int i = 0; i < cfg->nrepos; i++) {
         struct repo_index ri;
-        if (repo_load(cfg->repo[i], &ri) != 0)
+        if (repo_load(cfg->cache, cfg->repo[i], &ri, 0) != 0)
             continue;
         const struct repo_pkg *rp = repo_find(&ri, name);
         if (rp) {
@@ -231,7 +231,7 @@ int cmd_install(const struct cp_config *cfg, int argc, char **argv,
     }
     if (cfg->nrepos == 0) {
         cp_err("cactpkg: no repositories configured "
-               "(add 'repo = <dir>' to %s, or use --repo)\n", "/etc/cactpkg.conf");
+               "(add 'repo = <dir|url>' to %s, or use --repo)\n", "/etc/cactpkg.conf");
         return -1;
     }
 

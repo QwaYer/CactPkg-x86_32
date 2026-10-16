@@ -14,6 +14,7 @@ void cfg_defaults(struct cp_config *cfg)
     memset(cfg, 0, sizeof(*cfg));
     strcpy(cfg->prefix, "/usr/local");
     strcpy(cfg->db, "/var/lib/cactpkg");
+    strcpy(cfg->cache, "/var/cache/cactpkg");
     cfg->nrepos = 0;
     strcpy(cfg->arch, CP_ARCH_DEFAULT);
     cfg_add_repo(cfg, "/usr/lib/cactpkg/repo");   /* offline repo baked into the image */
@@ -39,6 +40,9 @@ static void cfg_set(struct cp_config *cfg, const char *key, const char *value)
     } else if (strcmp(key, "db") == 0) {
         strncpy(cfg->db, value, CP_PATH_MAX - 1);
         cfg->db[CP_PATH_MAX - 1] = '\0';
+    } else if (strcmp(key, "cache") == 0) {
+        strncpy(cfg->cache, value, CP_PATH_MAX - 1);
+        cfg->cache[CP_PATH_MAX - 1] = '\0';
     } else if (strcmp(key, "repo") == 0) {
         cfg_add_repo(cfg, value);
     } else if (strcmp(key, "arch") == 0) {
@@ -60,11 +64,13 @@ void cfg_write_default(const char *path)
         "#\n"
         "# prefix - installation root\n"
         "# db     - package database directory\n"
-        "# repo   - repository directory (repeatable)\n"
+        "# cache  - download cache for remote repositories\n"
+        "# repo   - repository directory or http(s) URL (repeatable)\n"
         "# arch   - package architecture\n"
         "\n"
         "prefix=/usr/local\n"
         "db=/var/lib/cactpkg\n"
+        "cache=/var/cache/cactpkg\n"
         "repo=/usr/lib/cactpkg/repo\n"
         "arch=" CP_ARCH_DEFAULT "\n";
 

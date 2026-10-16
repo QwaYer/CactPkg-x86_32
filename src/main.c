@@ -30,8 +30,9 @@ static const char *usage_text =
     "  -y                     assume yes on prompts\n"
     "  -f, --force            force (reinstall / bypass checks)\n"
     "  -q, --quiet            quiet output\n"
-    "  -R, --repo <dir>       add a repository directory (repeatable)\n"
+    "  -R, --repo <dir|url>   add a repository source: a directory or http(s) URL\n"
     "      --prefix <dir>     installation root (default from config)\n"
+    "      --cache <dir>      download cache for remote repositories\n"
     "  -C, --conf <file>     config file (default " CONF_DEFAULT ")\n";
 
 static void cmd_help(void)
@@ -51,6 +52,7 @@ int main(int argc, char **argv)
 
     const char *conf_path = CONF_DEFAULT;
     const char *prefix_ovr = NULL;
+    const char *cache_ovr = NULL;
     int force = 0, yes = 0, quiet = 0;
 
     char *cmd = NULL;
@@ -82,7 +84,7 @@ int main(int argc, char **argv)
             continue;
         }
         if (strcmp(a, "-R") == 0 || strcmp(a, "--repo") == 0 ||
-            strcmp(a, "--prefix") == 0 ||
+            strcmp(a, "--prefix") == 0 || strcmp(a, "--cache") == 0 ||
             strcmp(a, "-C") == 0 || strcmp(a, "--conf") == 0) {
             if (i + 1 >= argc) {
                 cp_err("cactpkg: %s requires an argument\n", a);
@@ -93,6 +95,8 @@ int main(int argc, char **argv)
                 cfg_add_repo(&cfg, val);
             else if (strcmp(a, "--prefix") == 0)
                 prefix_ovr = val;
+            else if (strcmp(a, "--cache") == 0)
+                cache_ovr = val;
             else
                 conf_path = val;
             continue;
@@ -119,6 +123,8 @@ int main(int argc, char **argv)
     }
     if (prefix_ovr)
         strncpy(cfg.prefix, prefix_ovr, CP_PATH_MAX - 1);
+    if (cache_ovr)
+        strncpy(cfg.cache, cache_ovr, CP_PATH_MAX - 1);
 
     if (!cmd) {
         cmd_help();

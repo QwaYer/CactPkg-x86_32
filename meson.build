@@ -71,6 +71,7 @@ pkg_lib = static_library('cactpkg',
     'src/db.c',
     'src/main.c',
     'src/manifest.c',
+    'src/net.c',
     'src/repo.c',
     'src/util.c',
   ),
@@ -110,22 +111,33 @@ pkg_root = src_root / 'pkg'
 repo_dir = src_root / 'repo'
 
 # Fill the payload dirs of the directory-packages, then rebuild repo/ with the
-# repo-local tool.  Shared by repo/check/stage below.
+# repo-local tool.  Shared by repo/check/stage below.  The headers package is
+# filled from CactLibc's include/ so it always ships the current headers (the
+# image no longer carries a hand-staged /usr/include snapshot).
+_headers_src = cactlib / 'include'
+_headers_dst = pkg_root / 'cact-headers' / 'payload' / 'include'
+_fill_headers = (
+  'rm -rf "' + _headers_dst + '"; mkdir -p "' + _headers_dst + '"; ' +
+  'cp -a "' + _headers_src + '/." "' + _headers_dst + '/"; '
+)
+
 _prep_script = (
-  'set -e; ' +
+  'set -e; ' + _fill_headers +
   'mkdir -p "' + pkg_root + '/cactpkg/payload/sbin" "' + pkg_root + '/hello/payload/bin"; ' +
   'cp -f "$1" "' + pkg_root + '/cactpkg/payload/sbin/cactpkg"; ' +
   'cp -f "$2" "' + pkg_root + '/hello/payload/bin/hello"; ' +
   'rm -rf "' + repo_dir + '"; mkdir -p "' + repo_dir + '"; ' +
   python3.full_path() + ' "' + cpkg + '" build "' + pkg_root + '/hello" --repo "' + repo_dir + '"; ' +
   python3.full_path() + ' "' + cpkg + '" build "' + pkg_root + '/cactpkg" --repo "' + repo_dir + '"; ' +
+  python3.full_path() + ' "' + cpkg + '" build "' + pkg_root + '/cact-headers" --repo "' + repo_dir + '"; ' +
   python3.full_path() + ' "' + cpkg + '" index "' + repo_dir + '"'
 )
 
 # The Makefile's `stage`: payload dirs only.
 run_target('stage-payload',
   command: [bash, '-c',
-            'set -e; mkdir -p "' + pkg_root + '/cactpkg/payload/sbin" "' + pkg_root + '/hello/payload/bin"; ' +
+            'set -e; ' + _fill_headers +
+            'mkdir -p "' + pkg_root + '/cactpkg/payload/sbin" "' + pkg_root + '/hello/payload/bin"; ' +
             'cp -f "$1" "' + pkg_root + '/cactpkg/payload/sbin/cactpkg"; ' +
             'cp -f "$2" "' + pkg_root + '/hello/payload/bin/hello"',
             'bash', cactpkg_bin, hello_bin])
@@ -139,14 +151,16 @@ run_target('check',
   command: [bash, '-c', _prep_script +
             '; ' + python3.full_path() + ' "' + cpkg + '" check "' + pkg_root + '/hello"' +
             '; ' + python3.full_path() + ' "' + cpkg + '" check "' + pkg_root + '/cactpkg"' +
-            '; ' + python3.full_path() + ' "' + cpkg + '" dump "' + repo_dir + '/hello-1.0.0.cpkg"' +
-            '; ' + python3.full_path() + ' "' + cpkg + '" dump "' + repo_dir + '/cactpkg-0.1.0.cpkg"',
+            '; ' + python3.full_path() + ' "' + cpkg + '" check "' + pkg_root + '/cact-headers"' +
+            '; ' + python3.full_path() + ' "' + cpkg + '" dump "' + repo_dir + '/hello-2.0.0.cpkg"' +
+            '; ' + python3.full_path() + ' "' + cpkg + '" dump "' + repo_dir + '/cactpkg-2.0.0.cpkg"',
             'bash', cactpkg_bin, hello_bin])
 
 # The Makefile's `install`: bake the binary and the repository into LocalRepo
 # (run -C LocalRepoCactOS afterwards).  Meson reserves "install", hence "stage".
 run_target('stage',
   command: [bash, '-c', _prep_script +
+            '; rm -rf "' + lr_lib + '/cactpkg/repo"' +
             '; mkdir -p "' + lr_sbin + '" "' + lr_lib + '/cactpkg/repo"' +
             '; cp -f "$1" "' + lr_sbin + '/cactpkg"' +
             '; cp -f "' + repo_dir + '"/*.cpkg "' + repo_dir + '"/index "' + lr_lib + '/cactpkg/repo/"',

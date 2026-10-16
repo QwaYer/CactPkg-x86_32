@@ -1,9 +1,10 @@
 /*
  * cactpkg.h - common definitions of the CactPkg package manager.
  *
- * CactPkg: the local package manager of CactOS. It works without any
- * external repository (those will be added later): the package source is
- * a repository directory holding .cpkg files and an index file.
+ * CactPkg: the package manager of CactOS.  A package source is either a
+ * repository directory holding .cpkg files and an index, or a remote
+ * repository reached over http(s); remote indexes and artifacts are cached
+ * on disk.
  */
 
 #ifndef CACTPKG_H
@@ -12,7 +13,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define CP_VERSION       "0.1.0"
+#define CP_VERSION       "2.0.0"
 #define CP_ARCH_DEFAULT  "i686"
 
 #define CP_MAGIC         "CKPK"
@@ -37,7 +38,8 @@ struct cp_manifest {
 struct cp_config {
     char prefix[CP_PATH_MAX];           /* installation root */
     char db[CP_PATH_MAX];               /* installed-packages db dir */
-    char repo[CP_MAX_REPOS][CP_PATH_MAX];
+    char cache[CP_PATH_MAX];            /* download cache for remote repos */
+    char repo[CP_MAX_REPOS][CP_PATH_MAX];   /* a directory or an http(s) URL */
     int  nrepos;
     char arch[16];
 };
@@ -103,9 +105,16 @@ int  cpkg_load(const char *path, struct cpkg *p);
 void cpkg_unload(struct cpkg *p);
 
 /* repo.c */
-int  repo_load(const char *dir, struct repo_index *ri);
+int  repo_load(const char *cache, const char *src, struct repo_index *ri,
+               int refresh);
 void repo_unload(struct repo_index *ri);
 const struct repo_pkg *repo_find(const struct repo_index *ri, const char *name);
+char *repo_local_file(const char *cache, const char *src, const char *file,
+                      int refresh);
+
+/* net.c */
+int  net_is_url(const char *s);
+int  net_fetch(const char *url, const char *dest);   /* 0 ok, -1 error */
 
 /* db.c */
 int  db_has(const struct cp_config *cfg, const char *name);

@@ -1,5 +1,5 @@
 name: hello
-version: 1.0.0
+version: 2.0.0
 arch: i686
 description: Demo package for CactPkg - prints a greeting
 depends:

@@ -30,9 +30,8 @@ int cmd_update(const struct cp_config *cfg)
     int rc = 0;
     for (int i = 0; i < cfg->nrepos; i++) {
         struct repo_index ri;
-        if (repo_load(cfg->repo[i], &ri) != 0) {
-            cp_err("cactpkg: repository %s: no index (run 'make repo' first)\n",
-                   cfg->repo[i]);
+        if (repo_load(cfg->cache, cfg->repo[i], &ri, 1) != 0) {
+            cp_err("cactpkg: repository %s: no index\n", cfg->repo[i]);
             rc = -1;
             continue;
         }
@@ -91,7 +90,7 @@ int cmd_search(const struct cp_config *cfg, const char *needle)
 
     for (int r = 0; r < cfg->nrepos; r++) {
         struct repo_index ri;
-        if (repo_load(cfg->repo[r], &ri) != 0)
+        if (repo_load(cfg->cache, cfg->repo[r], &ri, 0) != 0)
             continue;
         for (int i = 0; i < ri.npkgs; i++) {
             struct repo_pkg *p = &ri.pkgs[i];
@@ -119,7 +118,7 @@ int cmd_info(const struct cp_config *cfg, const char *name)
 
     for (int r = 0; r < cfg->nrepos; r++) {
         struct repo_index ri;
-        if (repo_load(cfg->repo[r], &ri) != 0)
+        if (repo_load(cfg->cache, cfg->repo[r], &ri, 0) != 0)
             continue;
         const struct repo_pkg *p = repo_find(&ri, name);
         if (p) {

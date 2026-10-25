@@ -91,7 +91,7 @@ cactpkg_bin = custom_target('cactpkg',
   input: pkg_lib,
   command: _link_prefix +
            ['--whole-archive', pkg_lib, '--no-whole-archive', clibc_so],
-  depend_files: files('link.ld'),
+  depend_files: files('link.ld') + [start_o, clibc_so],
   build_by_default: true)
 
 hello_bin = custom_target('hello',
@@ -99,7 +99,7 @@ hello_bin = custom_target('hello',
   input: hello_lib,
   command: _link_prefix +
            ['--whole-archive', hello_lib, '--no-whole-archive', clibc_so],
-  depend_files: files('link.ld'),
+  depend_files: files('link.ld') + [start_o, clibc_so],
   build_by_default: true)
 
 # ------------------------------------------------------------------------------
@@ -110,19 +110,26 @@ cpkg = src_root / 'tools/cpkg.py'
 pkg_root = src_root / 'pkg'
 repo_dir = src_root / 'repo'
 
-# Fill the payload dirs of the directory-packages, then rebuild repo/ with the
-# repo-local tool.  Shared by repo/check/stage below.  The headers package is
-# filled from CactLibc's include/ so it always ships the current headers (the
-# image no longer carries a hand-staged /usr/include snapshot).
+# The headers package payload is filled from CactLibc's include/ so it always
+# ships the current headers (the image no longer carries a hand-staged
+# /usr/include snapshot).  This is a real build target, not a step buried in the
+# run_targets below, so a plain `ninja` refreshes it too: without that, the
+# payload on disk silently went stale whenever only CactLibc changed.
 _headers_src = cactlib / 'include'
 _headers_dst = pkg_root / 'cact-headers' / 'payload' / 'include'
-_fill_headers = (
-  'rm -rf "' + _headers_dst + '"; mkdir -p "' + _headers_dst + '"; ' +
-  'cp -a "' + _headers_src + '/." "' + _headers_dst + '/"; '
-)
+
+# Always considered out of date: a header added or removed in CactLibc must be
+# picked up without editing this file (a file list would need a reconfigure).
+headers_payload = custom_target('cact-headers-payload',
+  output: 'cact-headers.stamp',
+  command: [bash, '-c',
+            'set -e; rm -rf "' + _headers_dst + '"; mkdir -p "' + _headers_dst + '"; ' +
+            'cp -a "' + _headers_src + '/." "' + _headers_dst + '/"; touch "@OUTPUT@"'],
+  build_always_stale: true,
+  build_by_default: true)
 
 _prep_script = (
-  'set -e; ' + _fill_headers +
+  'set -e; ' +
   'mkdir -p "' + pkg_root + '/cactpkg/payload/sbin" "' + pkg_root + '/hello/payload/bin"; ' +
   'cp -f "$1" "' + pkg_root + '/cactpkg/payload/sbin/cactpkg"; ' +
   'cp -f "$2" "' + pkg_root + '/hello/payload/bin/hello"; ' +
@@ -133,18 +140,19 @@ _prep_script = (
   python3.full_path() + ' "' + cpkg + '" index "' + repo_dir + '"'
 )
 
-# The Makefile's `stage`: payload dirs only.
+# The Makefile's `stage`: payload dirs only.  headers_payload is passed as a
+# command argument purely so ninja builds (refreshes) it first.
 run_target('stage-payload',
   command: [bash, '-c',
-            'set -e; ' + _fill_headers +
+            'set -e; ' +
             'mkdir -p "' + pkg_root + '/cactpkg/payload/sbin" "' + pkg_root + '/hello/payload/bin"; ' +
             'cp -f "$1" "' + pkg_root + '/cactpkg/payload/sbin/cactpkg"; ' +
             'cp -f "$2" "' + pkg_root + '/hello/payload/bin/hello"',
-            'bash', cactpkg_bin, hello_bin])
+            'bash', cactpkg_bin, hello_bin, headers_payload])
 
 # The Makefile's `repo`: payloads + offline repository.
 run_target('repo',
-  command: [bash, '-c', _prep_script, 'bash', cactpkg_bin, hello_bin])
+  command: [bash, '-c', _prep_script, 'bash', cactpkg_bin, hello_bin, headers_payload])
 
 # The Makefile's `check`.
 run_target('check',
@@ -154,7 +162,7 @@ run_target('check',
             '; ' + python3.full_path() + ' "' + cpkg + '" check "' + pkg_root + '/cact-headers"' +
             '; ' + python3.full_path() + ' "' + cpkg + '" dump "' + repo_dir + '/hello-2.0.0.cpkg"' +
             '; ' + python3.full_path() + ' "' + cpkg + '" dump "' + repo_dir + '/cactpkg-2.0.0.cpkg"',
-            'bash', cactpkg_bin, hello_bin])
+            'bash', cactpkg_bin, hello_bin, headers_payload])
 
 # The Makefile's `install`: bake the binary and the repository into LocalRepo
 # (run -C LocalRepoCactOS afterwards).  Meson reserves "install", hence "stage".
@@ -164,4 +172,4 @@ run_target('stage',
             '; mkdir -p "' + lr_sbin + '" "' + lr_lib + '/cactpkg/repo"' +
             '; cp -f "$1" "' + lr_sbin + '/cactpkg"' +
             '; cp -f "' + repo_dir + '"/*.cpkg "' + repo_dir + '"/index "' + lr_lib + '/cactpkg/repo/"',
-            'bash', cactpkg_bin, hello_bin])
+            'bash', cactpkg_bin, hello_bin, headers_payload])
